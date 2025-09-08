@@ -3,7 +3,7 @@ lista_reservas = [] #arreglo vacío para que se muestre como lista la carga de l
 
 #definimos las funciones para a carga de reservas..
 def consultar_disponibilidad(destino, fecha): 
-    for reserva in lista_reservas: #iteración de cada elemento dentro del arreglo lista_reservas
+    for reserva in lista_reservas:
         if reserva["destino"] == destino and reserva["fecha"] == fecha: #comparación de destino guardado en ese reserva, con destino solicitado
                                                                         #uso de and para que ambas comparaciones sean verdaderas
             return False #Si encontró al menos una reserva 
@@ -74,7 +74,7 @@ def pedir_texto(mensaje):
             print("Error: El campo no puede quedar vacío.")
             
 def principal():
-    for i in range(2):#caraga de dos reservas como ejemplo
+    for i in range(2):#carga de dos reservas como ejemplo
         print("--Reserva de su viaje--")
         cliente, dni, destino, fecha, salida = carga_de_viaje()
         mensaje =  reservar_viaje(cliente,destino,fecha,salida)
