@@ -8,7 +8,6 @@ def base_viajes():
     con = sqlite3.connect('baseviajes.db')
     return con
 
-# Crear la tabla solo si no existe
 def crear_tabla(con):
     cursor = con.cursor()
     sql = """CREATE TABLE IF NOT EXISTS viajes
@@ -23,7 +22,7 @@ def crear_tabla(con):
 crear_tabla(base_viajes())
 
 def alta(nombre, apellido, pasaje, horario, tree):
-    # Validaciones
+
     patron_nombre = r"^[A-Za-záéíóúÁÉÍÓÚñÑ ]{1,20}$"
     patron_apellido = r"^[A-Za-záéíóúÁÉÍÓÚñÑ ]{1,20}$"
     patron_pasaje = r"^[A-Z0-9]{1,20}$"
@@ -74,7 +73,7 @@ Label(root, text="Apellido").grid(row=2, column=0, sticky=W)
 Label(root, text="Pasaje").grid(row=3, column=0, sticky=W)
 Label(root, text="Horario").grid(row=4, column=0, sticky=W)
 
-# Defino variables para tomar valores de campos de entrada
+
 a_val, b_val, c_val, d_val = StringVar(), StringVar(), StringVar(), StringVar()
 w_ancho = 20
 
@@ -101,7 +100,7 @@ tree.heading("col3", text="Pasaje")
 tree.heading("col4", text="Horario")
 tree.grid(row=10, column=0, columnspan=4)
 
-boton_alta = Button(root, text="Alta", command=lambda: alta(a_val, b_val, c_val, d_val, tree))
+boton_alta = Button(root, text="Nuevo Viaje", command=lambda: alta(a_val, b_val, c_val, d_val, tree))
 boton_alta.grid(row=6, column=1)
 
 actualizar_treeview(tree)
