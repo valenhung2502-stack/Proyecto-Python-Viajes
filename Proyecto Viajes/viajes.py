@@ -139,8 +139,8 @@ boton_alta.grid(row=1, column=2)
 boton_baja=Button(root, text="Baja", command=lambda:baja(tree))
 boton_baja.grid(row=3, column=2)
 
-boton_modificar=Button(root, text="Modificar", command=lambda:modificar(b_val.get(), c_val.get(), d_val.get(), e_val.get(), tree))
-boton_modificar.grid(row=5, column=2)
+#boton_modificar=Button(root, text="Modificar", command=lambda:modificar(b_val.get(), c_val.get(), d_val.get(), e_val.get(), tree))
+#boton_modificar.grid(row=5, column=2)
 
 
 
