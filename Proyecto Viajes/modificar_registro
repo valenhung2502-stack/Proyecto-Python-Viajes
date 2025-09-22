@@ -1,0 +1,404 @@
+from tkinter import *
+from tkinter.messagebox import *
+import sqlite3
+from tkinter import ttk
+import re
+
+
+
+def base_viajes():
+    con = sqlite3.connect('viajes3.db')
+    return con
+
+
+def crear_tabla(con):
+    cursor = con.cursor()
+    sql = """CREATE TABLE IF NOT EXISTS viajes
+             (dni varchar(10) PRIMARY KEY,
+              nombre_apellido varchar(40) NOT NULL,
+              origen varchar(20) NOT NULL,
+              numero_pasaje varchar(20),
+              horario varchar(5),
+              destino varchar(20),
+              fecha varchar(20))
+    """
+    cursor.execute(sql)
+    con.commit()
+
+
+crear_tabla(base_viajes())
+
+
+def alta(dni, nombre_apellido, origen, numero_pasaje, horario, destino, fecha, tree):
+    patron_dni = r"^[0-9]{1,10}$"
+    patron_nombre_apellido = r"^[A-Za-záéíóúÁÉÍÓÚñÑ ]{1,40}$"
+    patron_origen = r"^[A-Za-záéíóúÁÉÍÓÚñÑ ]{1,20}$"
+    patron_numero_pasaje = r"^[A-Za-z0-9]{1,20}$"
+    patron_horario = r"^[0-9:]{1,5}$"
+    patron_destino = r"^[A-Za-záéíóúÁÉÍÓÚñÑ ]{1,20}$"
+    patron_fecha = r"^[0-9/-]{1,20}$"
+
+    if not re.match(patron_dni, dni.get()):
+        showerror("Error", "DNI inválido")
+        return
+    if not re.match(patron_nombre_apellido, nombre_apellido.get()):
+        showerror("Error", "Nombre y apellido inválido")
+        return
+    if not re.match(patron_origen, origen.get()):
+        showerror("Error", "Origen inválido")
+        return
+    if not re.match(patron_numero_pasaje, numero_pasaje.get()):
+        showerror("Error", "Número de pasaje inválido")
+        return
+    if not re.match(patron_horario, horario.get()):
+        showerror("Error", "Horario inválido")
+        return
+    if not re.match(patron_destino, destino.get()):
+        showerror("Error", "Destino inválido")
+        return
+    if not re.match(patron_fecha, fecha.get()):
+        showerror("Error", "Fecha inválida")
+        return
+
+    con = base_viajes()
+    cursor = con.cursor()
+    try:
+        cursor.execute(
+            "INSERT INTO viajes (dni, nombre_apellido, origen, numero_pasaje, horario, destino, fecha) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (dni.get(), nombre_apellido.get(), origen.get(), numero_pasaje.get(), horario.get(), destino.get(),
+             fecha.get())
+        )
+        con.commit()
+    except sqlite3.IntegrityError:
+        showerror("Error", "El DNI ya existe")
+    con.close()
+    actualizar_treeview(tree)
+
+
+def borrar_registro(tree):
+    selected = tree.selection()
+    if not selected:
+        showerror("Error", "Seleccione un registro para eliminar")
+        return
+    item = tree.item(selected)
+    dni_borrar = item['values'][0]
+    con = base_viajes()
+    cursor = con.cursor()
+    cursor.execute("DELETE FROM viajes WHERE dni = ?", (dni_borrar,))
+    con.commit()
+    con.close()
+    actualizar_treeview(tree)
+
+
+def modificar_registro(tree, dni, nombre_apellido, origen, numero_pasaje, horario, destino, fecha):
+    selected = tree.selection()
+    if not selected:
+        showerror("Error", "Seleccione un registro para modificar")
+        return
+
+    item_id = selected[0]
+    item = tree.item(item_id)
+    # item = tree.item(selected)
+
+    dni_modificar = item['values'][0]
+
+    con = base_viajes()
+    cursor = con.cursor()
+    cursor.execute(
+        "UPDATE viajes SET nombre_apellido=?, origen=?, numero_pasaje=?, horario=?, destino=?, fecha=? WHERE dni=?",
+        (nombre_apellido.get(),
+         origen.get(),
+         numero_pasaje.get(),
+         horario.get(),
+         destino.get(),
+         fecha.get(),
+         dni_modificar)
+    )
+
+    if cursor.rowcount == 0:
+        showerror("Error", "No se encotró el resistro a modificar")
+    else:
+        con.commit()
+        showinfo("Éxito", "Registro actualizado correctamente")
+
+    con.close()
+    actualizar_treeview(tree)
+
+
+def actualizar_treeview(mitreview):
+    records = mitreview.get_children()
+    for element in records:
+        mitreview.delete(element)
+    sql = "SELECT * FROM viajes ORDER BY dni ASC"
+    con = base_viajes()
+    cursor = con.cursor()
+    datos = cursor.execute(sql)
+    resultado = datos.fetchall()
+    for fila in resultado:
+        mitreview.insert("", 0, values=fila)
+
+
+root = Tk()
+root.title("Administrar Viajes")
+
+titulo = Label(root, text="Ingrese los datos del viaje", bg="DarkOrchid3", fg="thistle1", height=1, width=60)
+titulo.grid(row=0, column=0, columnspan=4, padx=1, pady=1, sticky=W + E)
+
+Label(root, text="DNI").grid(row=1, column=0, sticky=W)
+Label(root, text="Nombre y apellido").grid(row=2, column=0, sticky=W)
+Label(root, text="Origen").grid(row=3, column=0, sticky=W)
+Label(root, text="Número de pasaje").grid(row=4, column=0, sticky=W)
+Label(root, text="Horario").grid(row=1, column=2, sticky=W)
+Label(root, text="Destino").grid(row=2, column=2, sticky=W)
+Label(root, text="Fecha").grid(row=3, column=2, sticky=W)
+
+e_val, a_val, b_val, c_val, d_val, f_val, g_val = StringVar(), StringVar(), StringVar(), StringVar(), StringVar(), StringVar(), StringVar()
+w_ancho = 20
+
+entrada_dni = Entry(root, textvariable=e_val, width=w_ancho)  # dni
+entrada_dni.grid(row=1, column=1)
+entrada_nombre = Entry(root, textvariable=a_val, width=w_ancho)  # nombre_apellido
+entrada_nombre.grid(row=2, column=1)
+entrada_origen = Entry(root, textvariable=b_val, width=w_ancho)  # origen
+entrada_origen.grid(row=3, column=1)
+entrada_pasaje = Entry(root, textvariable=c_val, width=w_ancho)  # numero_pasaje
+entrada_pasaje.grid(row=4, column=1)
+entrada_horario = Entry(root, textvariable=d_val, width=w_ancho)  # horario
+entrada_horario.grid(row=1, column=3)
+entrada_destino = Entry(root, textvariable=f_val, width=w_ancho)  # destino
+entrada_destino.grid(row=2, column=3)
+entrada_fecha = Entry(root, textvariable=g_val, width=w_ancho)  # fecha
+entrada_fecha.grid(row=3, column=3)
+
+tree = ttk.Treeview(root)
+tree["columns"] = ("col1", "col2", "col3", "col4", "col5", "col6", "col7")
+tree.column("#0", width=0, stretch=NO)
+tree.column("col1", width=120, minwidth=80)
+tree.column("col2", width=200, minwidth=80)
+tree.column("col3", width=200, minwidth=80)
+tree.column("col4", width=200, minwidth=80)
+tree.column("col5", width=120, minwidth=80)
+tree.column("col6", width=200, minwidth=80)
+tree.column("col7", width=200, minwidth=80)
+tree.heading("col1", text="DNI")
+tree.heading("col2", text="Nombre y apellido")
+tree.heading("col3", text="Origen")
+tree.heading("col4", text="Número de pasaje")
+tree.heading("col5", text="Horario")
+tree.heading("col6", text="Destino")
+tree.heading("col7", text="Fecha")
+tree.grid(row=10, column=0, columnspan=4)
+
+boton_alta = Button(root, text="Guardar", command=lambda: alta(e_val, a_val, b_val, c_val, d_val, f_val, g_val, tree))
+boton_alta.grid(row=6, column=1)
+
+boton_borrar = Button(root, text="Eliminar", command=lambda: borrar_registro(tree))
+boton_borrar.grid(row=6, column=2)
+
+boton_modificar = Button(
+    root, text="Modificar",
+    command=lambda: modificar_registro(tree, e_val, a_val, b_val, c_val, d_val, f_val, g_val)
+)
+boton_modificar.grid(row=6, column=3)
+
+actualizar_treeview(tree)
+root.mainloop()
+from tkinter import *
+from tkinter.messagebox import *
+import sqlite3
+from tkinter import ttk
+import re
+
+
+def base_viajes():
+    con = sqlite3.connect('baseviajes.db')
+    return con
+
+
+def crear_tabla(con):
+    cursor = con.cursor()
+    sql = """CREATE TABLE IF NOT EXISTS viajes
+             (id INTEGER PRIMARY KEY AUTOINCREMENT,
+             nombre varchar(20) NOT NULL,
+             apellido varchar(20) NOT NULL,
+             pasaje varchar(20),
+             horario varchar(5))
+    """
+    cursor.execute(sql)
+    con.commit()
+
+
+crear_tabla(base_viajes())
+
+
+# agrego validación regex lo de def modificar
+def alta(nombre, apellido, pasaje, horario, tree):
+    patron_nombre = r"^[A-Za-záéíóúÁÉÍÓÚñÑ ]{1,20}$"
+    patron_apellido = r"^[A-Za-záéíóúÁÉÍÓÚñÑ ]{1,20}$"
+    patron_pasaje = r"^[A-Z0-9]{1,20}$"
+    patron_horario = r"^[0-9:]{1,5}$"
+
+    if not re.match(patron_nombre, nombre.get()):
+        showerror("Error", "Nombre inválido")
+        return
+    if not re.match(patron_apellido, apellido.get()):
+        showerror("Error", "Apellido inválido")
+        return
+    if not re.match(patron_pasaje, pasaje.get()):
+        showerror("Error", "Pasaje inválido")
+        return
+    if not re.match(patron_horario, horario.get()):
+        showerror("Error", "Horario inválido")
+        return
+
+    con = base_viajes()
+    cursor = con.cursor()
+    cursor.execute(
+        "INSERT INTO viajes (nombre, apellido, pasaje, horario) VALUES (?, ?, ?, ?)",
+        (nombre.get(), apellido.get(), pasaje.get(), horario.get())
+    )
+    if cursor.rowcount == 0:
+        showerror("Error", "No existe un viaje con ese ID")
+    else:
+        con.commit()
+        showinfo("Éxito", "Registro actualizado correctamente")
+    con.close()
+    actualizar_treeview(tree)
+
+
+# bajas
+def Baja(id_var, tree):
+    if not id_var.get().isdigit():
+        print("ID inválido")
+        return
+
+    con = base_viajes()
+    cursor = con.cursor()
+    cursor.execute("DELETE FROM VIAJES WHERE id=?", (id_var.get(),))
+    con.commit()
+    id_var.set("")
+    actualizar_treeview(tree)
+
+
+# función actualización...
+def modificar(id_var, nombre, apellido, pasaje, horario, tree):
+    if not id_var.get().isdigit():
+        showerror("Error!", "Debe ingresar un ID válido para modificar")
+        return
+    patron_nombre = r"^[A-Za-záéíóúÁÉÍÓÚñÑ ]{1,20}$"
+    patron_apellido = r"^[A-Za-záéíóúÁÉÍÓÚñÑ ]{1,20}$"
+    patron_pasaje = r"^[A-Z0-9]{1,20}$"
+    patron_horario = r"^[0-9:]{1,5}$"
+
+    if not re.match(patron_nombre, nombre.get()):
+        showerror("Error", "Nombre inválido")
+        return
+    if not re.match(patron_apellido, apellido.get()):
+        showerror("Error", "Apellido inválido")
+        return
+    if not re.match(patron_pasaje, pasaje.get()):
+        showerror("Error", "Pasaje inválido")
+        return
+    if not re.match(patron_horario, horario.get()):
+        showerror("Error", "Horario inválido")
+        return
+
+    con = base_viajes()
+    cursor = con.cursor()
+    cursor.execute(
+        "UPDATE viajes SET nombre = ?,  apellido = ? , pasaje = ?, horario = ?, WHERE id=?",
+        (nombre.get(),apellido.get(),pasaje.get(),horario.get(), id_var.get())
+    )
+#función carga automática de datos, creación de tree automatico
+def carga_datos_seleccionados(event, tree, id_var, nombre, apellido, pasaje, horario):
+    item = tree.selection()
+    if item:
+        item_id = item[0]
+        valores = tree.item(item_id,"Values")
+        texto_id = tree.item(item_id,"text")
+        #cargo los Entry
+        id_var.set(texto_id)
+        nombre.set(valores[0])
+        apellido.set(valores[1])
+        pasaje.set(valores[2])
+        horario.set(valores[3])
+
+#agregar tree y llamada a grid
+    tree.bind("<Double-1>", lambda e: cargar_datos_seleccionados(e,tree, id_var, a_val, b_val, c_val, d_val))
+def actualizar_treeview(mitreview):
+    records = mitreview.get_children()
+    for element in records:
+        mitreview.delete(element)
+    sql = "SELECT * FROM viajes ORDER BY id ASC"
+    con = base_viajes()
+    cursor = con.cursor()
+    datos = cursor.execute(sql)
+    resultado = datos.fetchall()
+    for fila in resultado:
+        mitreview.insert("", 0, text=fila[0], values=(fila[1], fila[2], fila[3], fila[4]))
+
+
+root = Tk()
+root.title("Administrar Viajes")
+
+titulo = Label(root, text="Ingrese sus datos", bg="DarkOrchid3", fg="thistle1", height=1, width=60)
+titulo.grid(row=0, column=0, columnspan=4, padx=1, pady=1, sticky=W + E)
+
+Label(root, text="Nombre").grid(row=1, column=0, sticky=W)
+Label(root, text="Apellido").grid(row=2, column=0, sticky=W)
+Label(root, text="Pasaje").grid(row=3, column=0, sticky=W)
+Label(root, text="Horario").grid(row=4, column=0, sticky=W)
+
+id_var = StringVar()
+a_val, b_val, c_val, d_val = StringVar(), StringVar(), StringVar(), StringVar()
+w_ancho = 20
+
+entrada1 = Entry(root, textvariable=a_val, width=w_ancho)
+entrada1.grid(row=1, column=1)
+entrada2 = Entry(root, textvariable=b_val, width=w_ancho)
+entrada2.grid(row=2, column=1)
+entrada3 = Entry(root, textvariable=c_val, width=w_ancho)
+entrada3.grid(row=3, column=1)
+entrada4 = Entry(root, textvariable=d_val, width=w_ancho)
+entrada4.grid(row=4, column=1)
+
+tree = ttk.Treeview(root)
+tree["columns"] = ("col1", "col2", "col3", "col4")
+tree.column("#0", width=90, minwidth=50, anchor=W)
+tree.column("col1", width=200, minwidth=80)
+tree.column("col2", width=200, minwidth=80)
+tree.column("col3", width=200, minwidth=80)
+tree.column("col4", width=200, minwidth=80)
+tree.heading("#0", text="ID")
+tree.heading("col1", text="Nombre")
+tree.heading("col2", text="Apellido")
+tree.heading("col3", text="Pasaje")
+tree.heading("col4", text="Horario")
+tree.grid(row=10, column=0, columnspan=4)
+
+# Campo para escribir el ID
+Label(root, text="ID").grid(row=7, column=0, sticky=W)
+entrada_id = Entry(root, textvariable=id_var, width=10)
+entrada_id.grid(row=7, column=0, padx=5, pady=5)
+
+# Campos de botones
+boton_alta = Button(root, text="Nuevo Viaje", command=lambda: alta(a_val, b_val, c_val, d_val, tree))
+boton_alta.grid(row=6, column=1)
+
+boton_baja = Button(root, text="Baja", command=lambda: Baja(id_var, tree))
+boton_baja.grid(row=7, column=1, padx=5, pady=5)
+
+#agrego botón de la función modificar
+boton_modificar = Button(
+    root, text="Modificar",
+    command=lambda: modificar(id_var, a_val, b_val, c_val, d_val, tree)
+)
+boton_modificar.grid(row=8, column=1, padx=5, pady=5)
+
+
+
+actualizar_treeview(tree)
+
+root.mainloop()
+
+
