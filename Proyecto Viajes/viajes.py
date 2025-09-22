@@ -1,7 +1,7 @@
 from tkinter import *
 import sqlite3
-from tkinter import ttk 
-
+from tkinter import ttk
+from tkinter.messagebox import *
 
 #################################################### Modelo ######################################################
 
@@ -36,7 +36,7 @@ def alta(dni, nombre, origen, destino, fecha, tree):
     con.commit()
     print("Estoy en alta todo ok")
     actualizar_treeview(tree)
-
+    entrada1.config(state="readonly")
 
 
 def baja(tree):
@@ -56,7 +56,27 @@ def baja(tree):
     con.commit()
     tree.delete(valor)
     
+
+def modificar(nombre, origen, destino, fecha, tree):
+    seleccionado = tree.selection()
+    if not seleccionado:
+        print("No se seleccionó ningún registro")
+        return
     
+    item = tree.item(seleccionado)
+    mi_id = item['text']  # El DNI (clave primaria)
+
+    con = conexion()
+    cursor = con.cursor()
+    sql = "UPDATE viajes SET nombre = ?, origen = ?, destino = ?, fecha = ? WHERE dni = ?"
+    data = (nombre, origen, destino, fecha, mi_id)
+    cursor.execute(sql, data)
+    con.commit()
+
+    print(f"Registro {mi_id} actualizado")
+    actualizar_treeview(tree)
+    
+   
 
 def actualizar_treeview(mitreview):
     records = mitreview.get_children()
@@ -74,6 +94,36 @@ def actualizar_treeview(mitreview):
         mitreview.insert("", 0, text=fila[0], values=(fila[1], fila[2], fila[3], fila[4]))
 
 
+def mostrar_datos(event):
+    seleccionado = tree.selection()
+    if not seleccionado:
+        return
+    
+    item = tree.item(seleccionado)
+    dni = item['text']
+    nombre, origen, destino, fecha = item['values']
+
+    # Cargar los valores en los Entry
+    a_val.set(dni)
+    b_val.set(nombre)
+    c_val.set(origen)
+    d_val.set(destino)
+    e_val.set(fecha)
+
+    # Bloquear el DNI
+    entrada1.config(state="readonly")
+
+
+def nuevo():
+    # Habilitar el DNI para ingresar otro registro
+    entrada1.config(state="normal")
+
+    # Limpiar los campos
+    a_val.set("")
+    b_val.set("")
+    c_val.set("")
+    d_val.set("")
+    e_val.set("")
 
 ################################################## Pantalla ###########################################################
 
@@ -128,6 +178,7 @@ tree.heading("col4", text="Destino")
 tree.heading("col5", text="Fecha")
 tree.grid(row=10, column=0, columnspan=4)
 
+tree.bind("<<TreeviewSelect>>", mostrar_datos)
 
 ################################# Botones ############################################
 
@@ -139,9 +190,13 @@ boton_alta.grid(row=1, column=2)
 boton_baja=Button(root, text="Baja", command=lambda:baja(tree))
 boton_baja.grid(row=3, column=2)
 
-#boton_modificar=Button(root, text="Modificar", command=lambda:modificar(b_val.get(), c_val.get(), d_val.get(), e_val.get(), tree))
-#boton_modificar.grid(row=5, column=2)
+boton_modificar=Button(root, text="Modificar", command=lambda:modificar(b_val.get(), c_val.get(), d_val.get(), e_val.get(), tree))
+boton_modificar.grid(row=5, column=2)
 
+boton_modificar=Button(root, text="Mostrar Datos", command=lambda:actualizar_treeview(tree))
+boton_modificar.grid(row=3, column=3)
 
+boton_nuevo = Button(root, text="Nuevo", command=nuevo)
+boton_nuevo.grid(row=1, column=3)
 
 root.mainloop()
