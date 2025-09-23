@@ -86,15 +86,31 @@ def modificar_registro(tree, dni, nombre_apellido, origen, numero_pasaje, horari
     if not selected:
         showerror("Error", "Seleccione un registro para modificar")
         return
-    item = tree.item(selected)
+
+    item_id = selected[0]
+    item = tree.item(item_id)
+
     dni_modificar = item['values'][0]
+
     con = base_viajes()
     cursor = con.cursor()
     cursor.execute(
         "UPDATE viajes SET nombre_apellido=?, origen=?, numero_pasaje=?, horario=?, destino=?, fecha=? WHERE dni=?",
-        (nombre_apellido.get(), origen.get(), numero_pasaje.get(), horario.get(), destino.get(), fecha.get(), dni_modificar)
+        (nombre_apellido.get(),
+         origen.get(),
+         numero_pasaje.get(),
+         horario.get(),
+         destino.get(),
+         fecha.get(),
+         dni_modificar)
     )
-    con.commit()
+
+    if cursor.rowcount == 0:
+        showerror("Error", "No se encontró el registro a modificar")
+    else:
+        con.commit()
+        showinfo("Éxito", "Registro actualizado correctamente")
+
     con.close()
     actualizar_treeview(tree)
 
